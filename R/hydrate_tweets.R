@@ -20,7 +20,7 @@ hydrate_tweets <- function(ids,  bearer_token = get_bearer(), data_path = NULL,
   ## verbose = TRUE,
   ## errors = FALSE) {
   ## Building parameters for get_tweets()
-  check_data_path(data_path = data_path, file = file, bind_tweets = bind_tweets, verbose = verbose)
+  check_data_path(data_path = data_path, file = "", bind_tweets = bind_tweets, verbose = verbose)
   params <- list(
     tweet.fields = "attachments,author_id,conversation_id,created_at,entities,geo,id,in_reply_to_user_id,lang,public_metrics,possibly_sensitive,referenced_tweets,source,text,withheld", 
     user.fields = "created_at,description,entities,id,location,name,pinned_tweet_id,profile_image_url,protected,public_metrics,url,username,verified,withheld", 
@@ -38,23 +38,29 @@ hydrate_tweets <- function(ids,  bearer_token = get_bearer(), data_path = NULL,
     n_batches <- 0
   }
   endpoint_url <- "https://api.twitter.com/2/tweets"
+  if (verbose) {
+    pb <- utils::txtProgressBar(min = 0, max = n_batches, initial = 0)
+    .vcat(verbose, "Hydrating...", "\n")
+  }
   for (i in seq_len(n_batches)) {
     batch <- ids[((i-1)*100+1):min(length(ids),(i*100))]
     params[["ids"]] <- paste0(batch, collapse = ",")
     
     ## Get tweets
-    .vcat(verbose, "Batch", i, "out of", ceiling(length(ids) / 100),": ids", utils::head(batch, n = 1), "to", utils::tail(batch, n = 1), "\n")
+    ## .vcat(verbose, "Batch", i, "out of", ceiling(length(ids) / 100),": ids", utils::head(batch, n = 1), "to", utils::tail(batch, n = 1), "\n")
     ## new_rows <- get_tweets(params = params, endpoint_url = endpoint_url, n = Inf, file = NULL, bearer_token = bearer_token, 
     ##                        export_query = FALSE, data_path = data_path, bind_tweets = bind_tweets, verbose = verbose, errors = errors)
     new_rows <- get_tweets(params = params, endpoint_url = endpoint_url, n = Inf, file = NULL, bearer_token = bearer_token, 
-                           export_query = FALSE, data_path = data_path, bind_tweets = bind_tweets, verbose = verbose)
-    
+                           export_query = FALSE, data_path = data_path, bind_tweets = bind_tweets, verbose = FALSE)
+    if (verbose) {
+      utils::setTxtProgressBar(pb, i)
+    }
     if (bind_tweets) {
     ## if (errors){
     ##   .vcat(verbose, "Retrieved", nrow(dplyr::filter(new_rows, is.na(error))), "out of", length(batch), "\n" , 
     ##         "Errors:", nrow(dplyr::filter(new_rows, !is.na(error))), "\n" )
     ## } else {
-    .vcat(verbose, "Retrieved", nrow(new_rows), "out of", length(batch), "\n")
+    ## .vcat(verbose, "Retrieved", nrow(new_rows), "out of", length(batch), "\n")
     ## }
 
       ##  new_rows$from_tweet_id <- batch[batch %in% new_rows$id]
@@ -65,7 +71,7 @@ hydrate_tweets <- function(ids,  bearer_token = get_bearer(), data_path = NULL,
     ## if (errors) {
     ##   .vcat(verbose, "Total Tweets:", nrow(dplyr::filter(new_df, is.na(error))), "\n")
     ## } else {
-    .vcat(verbose, "Total Tweets:", nrow(new_df), "\n")
+    ## .vcat(verbose, "Total Tweets:", nrow(new_df), "\n")
     ##   }
     ## }
     ## if (errors) {
